@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"savioyo.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="贝叶斯定理贝叶斯推断是一种统计学方法，用来估计统计量的某种性质。贝叶斯推断与传统的频率学派不同，它是建立在主观判断的基础上的，也就是说，你可以不需要客观证据，先估计一个值，然后根据实际结果不断修正。由于其主观性太强，所以在一些传统行业内更偏向于传统的频率学派。 贝叶斯定理需要先验知识作为支撑，而先验知识需要大量的计算和历史数据，因此在很长一段时间内，无法得到广泛应用。只有计算机诞生以后，它才获得真">
+<meta property="og:type" content="article">
+<meta property="og:title" content="频率学派和贝叶斯学派">
+<meta property="og:url" content="http://savioyo.com/2016/12/10/%E9%A2%91%E7%8E%87%E5%AD%A6%E6%B4%BE%E5%92%8C%E8%B4%9D%E5%8F%B6%E6%96%AF%E5%AD%A6%E6%B4%BE/">
+<meta property="og:site_name" content="鲈鱼和葡萄">
+<meta property="og:description" content="贝叶斯定理贝叶斯推断是一种统计学方法，用来估计统计量的某种性质。贝叶斯推断与传统的频率学派不同，它是建立在主观判断的基础上的，也就是说，你可以不需要客观证据，先估计一个值，然后根据实际结果不断修正。由于其主观性太强，所以在一些传统行业内更偏向于传统的频率学派。 贝叶斯定理需要先验知识作为支撑，而先验知识需要大量的计算和历史数据，因此在很长一段时间内，无法得到广泛应用。只有计算机诞生以后，它才获得真">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2016-12-10T14:53:49.000Z">
+<meta property="article:modified_time" content="2016-12-30T07:24:21.000Z">
+<meta property="article:author" content="Vio">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://savioyo.com/2016/12/10/%E9%A2%91%E7%8E%87%E5%AD%A6%E6%B4%BE%E5%92%8C%E8%B4%9D%E5%8F%B6%E6%96%AF%E5%AD%A6%E6%B4%BE/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>频率学派和贝叶斯学派 | 鲈鱼和葡萄</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">鲈鱼和葡萄</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://savioyo.com/2016/12/10/%E9%A2%91%E7%8E%87%E5%AD%A6%E6%B4%BE%E5%92%8C%E8%B4%9D%E5%8F%B6%E6%96%AF%E5%AD%A6%E6%B4%BE/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Vio">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="鲈鱼和葡萄">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          频率学派和贝叶斯学派
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2016-12-10 22:53:49" itemprop="dateCreated datePublished" datetime="2016-12-10T22:53:49+08:00">2016-12-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2016-12-30 15:24:21" itemprop="dateModified" datetime="2016-12-30T15:24:21+08:00">2016-12-30</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Data/" itemprop="url" rel="index"><span itemprop="name">Data</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="贝叶斯定理"><a href="#贝叶斯定理" class="headerlink" title="贝叶斯定理"></a>贝叶斯定理</h3><p>贝叶斯推断是一种统计学方法，用来估计统计量的某种性质。<br>贝叶斯推断与传统的频率学派不同，它是建立在主观判断的基础上的，也就是说，你可以不需要客观证据，先估计一个值，然后根据实际结果不断修正。由于其主观性太强，所以在一些传统行业内更偏向于传统的频率学派。</p>
+<p>贝叶斯定理需要先验知识作为支撑，而先验知识需要大量的计算和历史数据，因此在很长一段时间内，无法得到广泛应用。只有计算机诞生以后，它才获得真正的重视。人们发现，许多统计量是无法进行客观判断的，而互联网时代出现的大型数据集，再加上告诉运算能力，为验证这些统计量提供了方便，也为应用贝叶斯定理创造了条件。</p>
+<h4 id="条件概率"><a href="#条件概率" class="headerlink" title="条件概率"></a>条件概率</h4><p>$$P( A \mid B ) = \frac {P(A \bigcap B) } {P(B)}$$</p>
+<p>$$P(A \bigcap B) = P(A \mid B) * P(B)$$</p>
+<a id="more"></a>
+
+<p>同理可得：</p>
+<p>$$P(A \bigcap B) = P(B \mid A) * P(A)$$</p>
+<p>即：</p>
+<p>$$P(A \mid B) * P(B) = P(B \mid A) * P(A)$$</p>
+<p>$$P(B \mid A) = \frac {P(A \mid B) * P(B)} {P(A)}$$</p>
+<h4 id="全概率公式"><a href="#全概率公式" class="headerlink" title="全概率公式"></a>全概率公式</h4><p>若事件 $B_1$ 、 $B_2$ 、……构成一个完备事件组，且都有正概率，那么对于任意一个事件A，有如下公式:</p>
+<p>$$P(A) = P(AB_1) + P(AB_2) + \cdots + P(ABn) = \<br>P(A \mid B_1)P(B_1) + P(A \mid B_2)P(B_2) + \cdots + P(A \mid B_n)P(B_n)$$</p>
+<p>此公式为全概率公式，特别的，对于任意两随机事件A和B，有如下成立：</p>
+<p>$$P(B) = P(B \mid A)P(A) + P(B \mid \bar A)P(\bar A)$$</p>
+<h4 id="贝叶斯公式"><a href="#贝叶斯公式" class="headerlink" title="贝叶斯公式"></a>贝叶斯公式</h4><p>贝叶斯公式，其实原本应该叫逆概公式。<br>贝叶斯公式与全概率公式相反，是在已知 $P(B)$ 的基础上，求 $P(B \mid A)$ 。<br>通过对条件概率的简单变形，就可以得到贝叶斯公式：</p>
+<p>$$P(B \mid A) = P(B) * \frac {P(A \mid B)} {P(A)}$$</p>
+<p>贝叶斯公式由三部分形成，先验概率、后验概率、似然估计。其中<code>后验概率 = 先验概率 * 似然估计</code>。在上述公式中，$P(B)$ 是先验概率，$\frac {P(A \mid B)} {P(A)}$ 是似然估计，$P(A)$ 是后验概率。</p>
+<p>所谓先验概率就是在事件A发生之前，我们对B事件概率的一个判断。后验概率则指的是在事件A发生之后，我们对B事件概率的重新评估。似然估计是一个调整因子或者修正参数，在我们计算事件概率的时候，<code>需要不断通过修正参数使得我们所求的概率无限接近于真实概率</code>。</p>
+<p>如果似然估计 $\frac {P(A \mid B)} {P(A)} &gt; 1$ ，那么表示A事件的发生提高了B事件发生的概率。相反的，如果似然估计 $\frac {P(A \mid B)} {P(A)} &lt; 1$ ，那么表示A事件的发生降低了B事件发生的概率。</p>
+<h4 id="贝叶斯公式的实例"><a href="#贝叶斯公式的实例" class="headerlink" title="贝叶斯公式的实例"></a>贝叶斯公式的实例</h4><p>通过一些实例可以对贝叶斯公式有更深的理解。</p>
+<p><em>天气预测问题</em></p>
+<ul>
+<li>根据若干年的统计（经验）或者气候（常识），某地方下雨的概率——<code>先验概率</code></li>
+<li>下雨（结果）的时候有乌云（原因/证据/观察的数据）的概率，即已经有了结果，对证据发生的可能性描述——<code>似然</code></li>
+<li>根据天上有乌云（原因或者证据/观察数据），下雨（结果）的概率——<code>后验概率</code></li>
+</ul>
+<p><code>有下雨的可能（先验），下雨之前会有乌云（似然）→ 现在有乌云</code>， 可以推断是否下雨。</p>
+<p><em>机器故障问题</em></p>
+<p>一机器在良好状态生产合格产品几率是90%，在故障状态生产合格产品的合格几率是75%，若该机器生产出了一件合格产品，那么此机器良好的概率是多少？</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>产品好</th>
+<th>产品坏</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>机器好</strong></td>
+<td>0.75 * 0.9</td>
+<td>0.75 * 0.1</td>
+</tr>
+<tr>
+<td><strong>机器坏</strong></td>
+<td>0.25 * 0.3</td>
+<td>0.25 * 0.7</td>
+</tr>
+</tbody></table>
+<p>假定事件 $A$ 表示产品好，事件 $B$ 表示机器好，之后看贝叶斯公式就可以了。</p>
+<p><em>水果糖问题</em></p>
+<p>有两个完全相同的碗，其中第一个碗中有30颗水果糖和10颗巧克力糖，第二个碗中有20颗水果糖和20颗巧克力糖。现在随机选一个碗拿一颗糖，发现是水果糖，那么这颗糖来自第一个碗的概率是多少？</p>
+<p>假定 $H_1$ 代表一号碗， $H_2$ 代表二号碗。因为两个碗完全相同，所以 $P(H_1) = P(H_2) = 0.5$ 。我们认为这是<code>先验概率</code>，即在我们没有做实验之前，来自一号碗的概率是0.5。</p>
+<p>再假定， $E$ 表示水果糖，所以问题就变成了在已知 $E$ 的情况下，来自一号碗的概率有多大，即求 $P(H_1 \mid E)$ ，此概率即为<code>后验概率</code>，即在 $E$ 事件发生以后，对 $P(H_1)$ 的修正。</p>
+<p>根据条件概率公式，得到：</p>
+<p>$$P(H_1 \mid E) = P(H_1) \frac {P(E \mid H_1)} {P(E)}$$</p>
+<p>已知 $P(H_1) = 0.5$ 、 $P(E \mid H_1) = 30 / 40 = 0.75$ ，因此只需要根据全概率公式求得 $P(E)$  即可。</p>
+<p>$$P(E) = P(E \mid H_1)P(H_1) + P(E \mid H_2)P(H_2)$$</p>
+<p>则：<br>$$P(H_1 \mid E) = 0.5 * 0.75 / 0.625 = 0.6$$</p>
+<p>我们发现经过事件 $E$ 之后， $H_1$ 事件的概率得到了提高。</p>
+<p><em>假阳性问题</em></p>
+<p>已知某种疾病的发病率是0.001，即1000个人中会有1个人得病。现有一种试剂可以检验患者是否得病，它的准确率是0.99，即在患者确实得病的情况下，它有99%的可能呈现阳性。它的误报率为5%，即在患者没有得病的情况下，它有5%的可能呈现阳性。现有一个病人的检验结果为阳性，请问他确实得病的可能性多大？</p>
+<p>假设 $A$ 事件表示得病，那么 $P(A) = 0.001$ 。这就是<code>先验概率</code>，即没有做实验之前，我们预计的发病率。再假定 $B$ 事件表示阳性，那么要计算就是 $P(A \mid B)$ 。这就是<code>后验概率</code>，即做了实验之后，对发病率的估计。</p>
+<p>根据条件概率公式</p>
+<p>$$P(A \mid B) = P(A) \frac {P(B \mid A)} {P(B)}$$</p>
+<p>用全概率公式计算得</p>
+<p>$$P(A \mid B) = P(A) \frac {P(B \mid A)} {P(B \mid A)P(A) + P(B \mid \bar A)P(\bar A)}$$</p>
+<p>$$P(A \mid B) = 0.001 * 0.99 / (0.99 * 0.001 + 0.05 * 0.999) = 0.019$$</p>
+<p>也就是说即使检验的结果为阳性，病人得病的概率也只是从<code>0.1%</code>到了<code>2%</code>左右。所谓<code>假阳性</code>，即阳性结果完全不足以说明病人得病。虽然这与我们的常规认识不同，但是这个结果主要是因为误报率过高导致的。</p>
+<h3 id="频率学派和贝叶斯学派的区别"><a href="#频率学派和贝叶斯学派的区别" class="headerlink" title="频率学派和贝叶斯学派的区别"></a>频率学派和贝叶斯学派的区别</h3><p>直至今日，关于统计推断的主张和想法，大体可以纳入到两个体系之内，其一叫<code>频率学派</code>，其特征是把需要推断的参数 $\theta$ 视作固定且位置的常数，而样本 $X$ 是随机的，其着眼点在样本空间，有关的概率计算都是针对X的分布。另一派叫做<code>贝叶斯学派</code>，认为参数 $\theta$ 是随机变量，而样本 $X$ 是固定的，其着眼点在参数空间，重视参数 $\theta$ 的分布，<code>固定的操作模式是通过参数的先验分布结合样本信息得到参数的后验分布</code>。</p>
+<p>频率学派最重要的就是不断的重复（越多越好，趋近于无限），而贝叶斯学派讲的都是抽样和分布。下面是一些频率学派和贝叶斯学派之间思想不一致的地方。</p>
+<ul>
+<li><p>频率学派认为抽样是无限的。在无限次的抽样中，对于决策的规则可以很精确；而贝叶斯学派认为世界无时无刻不在改变，未知的的变量和事件都有一定的概率。这种概率会随时改变这个世界的状态（前面提到的后验概率是先验概率的修正）。</p>
+</li>
+<li><p>频率学派认为模型的参数是固定的，一个模型在无数次抽样过后，所有的参数都应该是一样的；而贝叶斯学派则认为数据应该是固定的，我们的规律从我们对这个世界的观察和认识中得来。我们看到的即是真实的、正确的。应该从观测的事物来估计参数。</p>
+</li>
+<li><p><code>频率学派和贝叶斯学派争论的焦点在于先验概率</code>。频率学派认为只有在先验分布有一种不依赖主观的意义，且能根据适当的理论或以往的经验决定时，才允许在统计推断中使用先验分布，否则就会丧失客观性。但是贝叶斯学派认为先验分布可以是主观的，不需要有频率解释。</p>
+</li>
+<li><p>频率论对概率的解释是：一个事件在一段较长的时间内发生的频率；贝叶斯对概率的解释是人们对某事件是否发生的认可程度。</p>
+</li>
+<li><p><code>贝叶斯论善于利用过去的只是和抽样数据，而频率论仅仅利用抽样数据。因此，贝叶斯推论中前一次得到的后验概率分布可以作为后一次的先验概率</code>。但是贝叶斯的问题在于，无信息先验已经被证明是不存在的。所有的先验参数变换后都不可避免的带有主观性。而频率学派用最大似然估计（MLE）则没有这个问题。频率学派的困难在于如何利用前人已有的经验。</p>
+</li>
+</ul>
+<p>频率学派和贝叶斯学派的区别可大可小。往大里说，两者的世界观就不同，频率派认为参数是客观存在的，不会改变，虽然未知，但却是固定的；贝叶斯认为参数是随机值，因为没有观察到，那么和一个随机数也没有什么区别，因此参数也可以有分布。往小处说，频率派最关心的是似然函数，而贝叶斯最常关心的是后验分布。但根据贝叶斯公式来看，贝叶斯方法也需要似然函数来计算，因此两者的一些方法是相通的。</p>
+<p>贝叶斯派因为所有的参数都是随机变量，都有分布，因此可以使用一些基于采样的方法（MCMC）使得我们更容易构建复杂模型。频率派的优点则是没有假设一个先验分布，因此更加客观，也更加无偏，在一些保守的领域（比如制药业、法律）比贝叶斯方法更受到信任。</p>
+<p><em>最后看一下先验分布是如何得到的。</em></p>
+<p>先验分布的得到是主观的，这也是它争议的地方。<br>为了方便计算，可以假设它属于一个分布，而它的的后验分布也是这个FAMILY里的。比如正态分布和BETA分布。<br>还有一种先验叫Non In Formative，假设我们对它一无所知。</p>
+<p>有些问题，比如太阳有没有爆炸之类，有比较明确的先验概率。而我们之所以相信这个先验概率，无非是因为我们知道在地球诞生以来的几十亿年里太阳都没有爆炸。我们不相信心电感应，无非是因为我们的日常生活中极少有人见过心电感应。仔细考察起来，这些先验概率其实也是从长期观察得来的。如果考虑到这点，频率派和贝叶斯派就很难区分了。</p>
+<p>更糟糕的是，科学实验往往探索的是以前没有探索过的新领域。很少有人去研究心电感应这种没什么希望的东西（也很少有人会资助这种研究）。在一个新领域，往往没有特别公认的先验概率，那么怎么办呢？这时候往往还是使用不提供任何信息的non-informative prior。</p>
+<p>参考资料：</p>
+<ol>
+<li><a target="_blank" rel="noopener" href="http://www.ruanyifeng.com/blog/2011/08/bayesian_inference_part_one.html">贝叶斯推断及其互联网应用（一）：定理简介</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhihu.com/question/19725590">怎样用非数学语言讲解贝叶斯定理（Bayes’ theorem）</a></li>
+<li><a target="_blank" rel="noopener" href="http://blog.sina.com.cn/s/blog_60864c1b0100dos3.html">贝叶斯统计</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.douban.com/group/topic/16719644/">频率学派和贝叶斯学派的不同</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2016/12/08/%E5%87%86%E5%8F%AC%E5%8F%8Aauc%E6%A6%82%E5%BF%B5%E5%88%86%E6%9E%90/" rel="prev" title="准召及auc概念分析">
+      <i class="fa fa-chevron-left"></i> 准召及auc概念分析
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2016/12/30/LatexInMD0/" rel="next" title="Latex In Markdown [0]">
+      Latex In Markdown [0] <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B4%9D%E5%8F%B6%E6%96%AF%E5%AE%9A%E7%90%86"><span class="nav-number">1.</span> <span class="nav-text">贝叶斯定理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9D%A1%E4%BB%B6%E6%A6%82%E7%8E%87"><span class="nav-number">1.1.</span> <span class="nav-text">条件概率</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%A8%E6%A6%82%E7%8E%87%E5%85%AC%E5%BC%8F"><span class="nav-number">1.2.</span> <span class="nav-text">全概率公式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%B4%9D%E5%8F%B6%E6%96%AF%E5%85%AC%E5%BC%8F"><span class="nav-number">1.3.</span> <span class="nav-text">贝叶斯公式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%B4%9D%E5%8F%B6%E6%96%AF%E5%85%AC%E5%BC%8F%E7%9A%84%E5%AE%9E%E4%BE%8B"><span class="nav-number">1.4.</span> <span class="nav-text">贝叶斯公式的实例</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A2%91%E7%8E%87%E5%AD%A6%E6%B4%BE%E5%92%8C%E8%B4%9D%E5%8F%B6%E6%96%AF%E5%AD%A6%E6%B4%BE%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">2.</span> <span class="nav-text">频率学派和贝叶斯学派的区别</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Vio</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">24</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Vio</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

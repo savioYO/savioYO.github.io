@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"savioyo.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="SLF4J和LOG4JSLF4J(Simple logging Facade for Java)不同于其他的日志类库，它并不是一个真正的日志实现，而是一个抽象层。从名称的缩写也可以看得出来，这是一个门面模式，也就是说，SLF4J这个类库只是其他实际日志类库的门面或者说是接口，在实际的工程项目中通过SLF4J接入不同的日志系统。所以，SLF4J是众多日志类库实现的接口集合，并不负责具体的日志实现，只">
+<meta property="og:type" content="article">
+<meta property="og:title" content="log4j.properties">
+<meta property="og:url" content="http://savioyo.com/2017/10/04/log4j-properties/">
+<meta property="og:site_name" content="鲈鱼和葡萄">
+<meta property="og:description" content="SLF4J和LOG4JSLF4J(Simple logging Facade for Java)不同于其他的日志类库，它并不是一个真正的日志实现，而是一个抽象层。从名称的缩写也可以看得出来，这是一个门面模式，也就是说，SLF4J这个类库只是其他实际日志类库的门面或者说是接口，在实际的工程项目中通过SLF4J接入不同的日志系统。所以，SLF4J是众多日志类库实现的接口集合，并不负责具体的日志实现，只">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://savioyo.com/images/slf4j%E5%92%8Clog4j.png">
+<meta property="article:published_time" content="2017-10-04T12:43:16.000Z">
+<meta property="article:modified_time" content="2018-02-12T11:31:16.000Z">
+<meta property="article:author" content="Vio">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://savioyo.com/images/slf4j%E5%92%8Clog4j.png">
+
+<link rel="canonical" href="http://savioyo.com/2017/10/04/log4j-properties/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>log4j.properties | 鲈鱼和葡萄</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">鲈鱼和葡萄</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://savioyo.com/2017/10/04/log4j-properties/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Vio">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="鲈鱼和葡萄">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          log4j.properties
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2017-10-04 20:43:16" itemprop="dateCreated datePublished" datetime="2017-10-04T20:43:16+08:00">2017-10-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2018-02-12 19:31:16" itemprop="dateModified" datetime="2018-02-12T19:31:16+08:00">2018-02-12</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="SLF4J和LOG4J"><a href="#SLF4J和LOG4J" class="headerlink" title="SLF4J和LOG4J"></a>SLF4J和LOG4J</h3><p>SLF4J(Simple logging Facade for Java)不同于其他的日志类库，它并不是一个真正的日志实现，而是一个抽象层。从名称的缩写也可以看得出来，这是一个门面模式，也就是说，SLF4J这个类库只是其他实际日志类库的门面或者说是接口，在实际的工程项目中通过SLF4J接入不同的日志系统。所以，SLF4J是众多日志类库实现的接口集合，并不负责具体的日志实现，只是在编译时负责寻找合适的日志系统进行绑定。下图表达了SLF4J和LOG4J的关系。</p>
+ <a id="more"></a>
+
+<p><img src="/images/slf4j%E5%92%8Clog4j.png"></p>
+<p>总结来看，对于用户来说只需要和SLF4J的接口进行交互，不必考虑底层的实现，当项目的日志系统需要变更或者与其他系统有交互时，那么只需要更改类库就可以了，而不必修改代码。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">   	&lt;groupId&gt;org.slf4j&lt;&#x2F;groupId&gt;</span><br><span class="line">   	&lt;artifactId&gt;slf4j-api&lt;&#x2F;artifactId&gt;</span><br><span class="line">   	&lt;version&gt;1.7.25&lt;&#x2F;version&gt;</span><br><span class="line">&lt;&#x2F;dependency&gt;</span><br><span class="line">&lt;dependency&gt;</span><br><span class="line">   	&lt;groupId&gt;org.slf4j&lt;&#x2F;groupId&gt;</span><br><span class="line">   	&lt;artifactId&gt;slf4j-log4j12&lt;&#x2F;artifactId&gt;</span><br><span class="line">   	&lt;version&gt;1.7.25&lt;&#x2F;version&gt;</span><br><span class="line">&lt;&#x2F;dependency&gt;</span><br><span class="line">&lt;dependency&gt;</span><br><span class="line">   	&lt;groupId&gt;log4j&lt;&#x2F;groupId&gt;</span><br><span class="line">   	&lt;artifactId&gt;log4j&lt;&#x2F;artifactId&gt;</span><br><span class="line">   	&lt;version&gt;1.2.17&lt;&#x2F;version&gt;</span><br><span class="line">&lt;&#x2F;dependency&gt;</span><br></pre></td></tr></table></figure>
+<h3 id="log4j-properties字段说明"><a href="#log4j-properties字段说明" class="headerlink" title="log4j.properties字段说明"></a>log4j.properties字段说明</h3><p>因为log4j应用的比较多，就以log4j的配置文件来进行字段的说明和日志系统的配置。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">log4j.rootLogger &#x3D; DEBUG,system.out,file</span><br><span class="line">log4j.appender.system.out&#x3D;org.apache.log4j.ConsoleAppender</span><br><span class="line">log4j.appender.system.out.layout&#x3D;org.apache.log4j.PatternLayout</span><br><span class="line">log4j.appender.system.out.layout.ConversionPattern&#x3D;%d&#123;yyyy-MM-dd HH:mm:ss&#125; %c %p -%m%n</span><br><span class="line"></span><br><span class="line">log4j.appender.file&#x3D;org.apache.log4j.RollingFileAppender</span><br><span class="line">log4j.appender.file.File &#x3D; my.log</span><br><span class="line">log4j.appender.file.Append &#x3D; true</span><br><span class="line">log4j.appender.file.Threshold &#x3D; INFO</span><br><span class="line">log4j.appender.file.MaxFileSize&#x3D;1KB</span><br><span class="line">log4j.appender.file.layout&#x3D;org.apache.log4j.PatternLayout</span><br><span class="line">log4j.appender.file.layout.ConversionPattern&#x3D;%d&#123;yyyy-MM-dd HH:mm:ss&#125; %c %p -%m%n</span><br><span class="line"></span><br><span class="line"># 局部日志等级：就近原则</span><br><span class="line">log4j.logger.com.savioyo &#x3D; INFO, AppenderName</span><br></pre></td></tr></table></figure>
+<p><strong>1、配置根Logger__，其语法为： log4j.rootLogger = [ level ] , appenderName, appenderName2<br>level：日志的级别，指定这条日志信息的重要性。分为ALL &lt; DEBUG &lt; INFO &lt; WARN &lt; ERROR &lt; FATAL。一般常用的为 DEBUG ， INFO ，WARN ，ERROR四种，分别对应Logger类的四种方法<br> debug(Object message ) ;<br> info(Object message ) ;<br> warn(Object message ) ;<br> error(Object message ) ;<br>如果设置级别为INFO，则优先级大于等于INFO级别（如：INFO、WARN、ERROR）的日志信息将可以被输出,小于该级别的如：DEBUG将不会被输出<br>appenderName :就是指定日志信息输出目的地，比如（打印到控制台，输出到文件等）。同一条日志信息可以配置多个输出目的地。<br>__2、配置log输出目的地</strong><br> Log4j提供以下几种：<br> org.apache.log4j.ConsoleAppender（控制台）<br> org.apache.log4j.FileAppender（文件）<br> org.apache.log4j.DailyRollingFileAppender（每天产生一个日志文件）<br> org.apache.log4j.RollingFileAppender（文件大小到达指定尺寸的时候产生一个新的文件）<br> org.apache.log4j.WriterAppender（将日志信息以流格式发送到任意指定的地方）<br><strong>3、log信息的格式</strong><br>当使用org.apache.log4j.PatternLayout来自定义信息格式时，可以使用<br>log4j.appender.A1.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss} %p -%m%n 来格式化信息<br>%c    输出所属类的全名，可写为 %c{Num} ,Num类名输出的范围  如：”com.sun.aaa.classB”, %C{2}将使日志输出输出范围为：aaa.classB<br>%d    输出日志时间其格式为 可指定格式 如 %d{HH:mm:ss}等<br>%l    输出日志事件发生位置，包括类目名、发生线程，在代码中的行数<br>%n    换行符<br>%m    输出代码指定信息，如info(“message”),输出message<br>%p    输出日志的优先级，即 FATAL ,ERROR 等<br>%r    输出从启动到显示该条日志信息所耗费的时间（毫秒数）<br>%t    输出产生该日志事件的线程名</p>
+<p>上述说明是搜索得到，大部分已经验证过，如果需要使用或者需要更详细的解释，建议查看官方文档。</p>
+<p>参考资料：</p>
+<ol>
+<li><a target="_blank" rel="noopener" href="http://swiftlet.net/archives/683">log4j使用介绍</a></li>
+<li><a target="_blank" rel="noopener" href="http://www.importnew.com/7450.html">为什么要使用SLF4J而不是Log4J</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.cnblogs.com/applerosa/p/5946739.html">log4j.properties 日志文件的详细配置说明</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2016/12/30/git%E8%BF%9C%E7%A8%8B%E5%88%86%E6%94%AF%E4%B8%8E%E4%BB%93%E5%BA%93%E6%93%8D%E4%BD%9C/" rel="prev" title="git远程分支与仓库操作">
+      <i class="fa fa-chevron-left"></i> git远程分支与仓库操作
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2017/10/04/Git%E4%B8%8ESVN/" rel="next" title="Git、SVN">
+      Git、SVN <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#SLF4J%E5%92%8CLOG4J"><span class="nav-number">1.</span> <span class="nav-text">SLF4J和LOG4J</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#log4j-properties%E5%AD%97%E6%AE%B5%E8%AF%B4%E6%98%8E"><span class="nav-number">2.</span> <span class="nav-text">log4j.properties字段说明</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Vio</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">24</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Vio</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"savioyo.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="数据收集与清洗最近的项目有一个需求是需要根据手机传感器的信息，对用户进行动作识别。 动作识别是通过一系列用户动作的记录和环境状况的数据，判断用户的运动状态（motion activity）。项目的需求仅限于根据数据判断用户的运动状态，如步行，跑步，驾车，骑车等。 采集数据采用的手机中的加速度计（accelerometer），Android的核心代码就是记录加速度计的数据以及当前行为状态的真值。采集">
+<meta property="og:type" content="article">
+<meta property="og:title" content="动作识别中的傅里叶变换">
+<meta property="og:url" content="http://savioyo.com/2016/11/28/%E5%8A%A8%E4%BD%9C%E8%AF%86%E5%88%AB%E4%B8%AD%E7%9A%84%E5%82%85%E9%87%8C%E5%8F%B6%E5%8F%98%E6%8D%A2/">
+<meta property="og:site_name" content="鲈鱼和葡萄">
+<meta property="og:description" content="数据收集与清洗最近的项目有一个需求是需要根据手机传感器的信息，对用户进行动作识别。 动作识别是通过一系列用户动作的记录和环境状况的数据，判断用户的运动状态（motion activity）。项目的需求仅限于根据数据判断用户的运动状态，如步行，跑步，驾车，骑车等。 采集数据采用的手机中的加速度计（accelerometer），Android的核心代码就是记录加速度计的数据以及当前行为状态的真值。采集">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://savioyo.com/images/walk&&car_all.png">
+<meta property="og:image" content="http://savioyo.com/images/walk&&car_compare.png">
+<meta property="og:image" content="http://savioyo.com/images/time_area.png">
+<meta property="og:image" content="http://savioyo.com/images/freq_area.png">
+<meta property="og:image" content="http://savioyo.com/images/dft.jpg">
+<meta property="article:published_time" content="2016-11-28T07:45:19.000Z">
+<meta property="article:modified_time" content="2018-03-11T10:30:24.000Z">
+<meta property="article:author" content="Vio">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://savioyo.com/images/walk&&car_all.png">
+
+<link rel="canonical" href="http://savioyo.com/2016/11/28/%E5%8A%A8%E4%BD%9C%E8%AF%86%E5%88%AB%E4%B8%AD%E7%9A%84%E5%82%85%E9%87%8C%E5%8F%B6%E5%8F%98%E6%8D%A2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>动作识别中的傅里叶变换 | 鲈鱼和葡萄</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">鲈鱼和葡萄</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://savioyo.com/2016/11/28/%E5%8A%A8%E4%BD%9C%E8%AF%86%E5%88%AB%E4%B8%AD%E7%9A%84%E5%82%85%E9%87%8C%E5%8F%B6%E5%8F%98%E6%8D%A2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Vio">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="鲈鱼和葡萄">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          动作识别中的傅里叶变换
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2016-11-28 15:45:19" itemprop="dateCreated datePublished" datetime="2016-11-28T15:45:19+08:00">2016-11-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2018-03-11 18:30:24" itemprop="dateModified" datetime="2018-03-11T18:30:24+08:00">2018-03-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Data/" itemprop="url" rel="index"><span itemprop="name">Data</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="数据收集与清洗"><a href="#数据收集与清洗" class="headerlink" title="数据收集与清洗"></a>数据收集与清洗</h3><p>最近的项目有一个需求是需要根据手机传感器的信息，对用户进行动作识别。</p>
+<p>动作识别是通过一系列用户动作的记录和环境状况的数据，判断用户的运动状态（motion activity）。项目的需求仅限于根据数据判断用户的运动状态，如步行，跑步，驾车，骑车等。</p>
+<p>采集数据采用的手机中的加速度计（accelerometer），Android的核心代码就是记录加速度计的数据以及当前行为状态的真值。采集的频率为 <strong>50Hz</strong>，综合考虑了耗电和存储的限制。同时在采集数据时，记录了Samsung motion API和Google Activity Recognition的数据，用来和项目最终的效果做一个对比。</p>
+<a id="more"></a>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onSensorChanged</span><span class="params">(SensorEvent sensorEvent)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">if</span>(sensorEvent.sensor.getType()== Sensor.TYPE_ACCELEROMETER)&#123;</span><br><span class="line">        <span class="keyword">float</span> x = sensorEvent.values[<span class="number">0</span>];</span><br><span class="line">        <span class="keyword">float</span> y = sensorEvent.values[<span class="number">1</span>];</span><br><span class="line">        <span class="keyword">float</span> z = sensorEvent.values[<span class="number">2</span>];</span><br><span class="line">        mLogger.info(<span class="string">&quot;record: &quot;</span> + mStatus + <span class="string">&quot; [&quot;</span> + x + <span class="string">&quot;,&quot;</span> + y + <span class="string">&quot;,&quot;</span> + z + <span class="string">&quot;]&quot;</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>根据奈奎斯特采样定理，在进行模拟/数字信号的转换过程中，当采样频率fs.max大于信号中最高频率fmax的2倍时(fs.max &gt; fmax * 2)，采样之后的数字信号完整地保留了原始信号中的信息，一般实际应用中保证采样频率为信号最高频率的2.56~4倍。虽然我们按照50Hz的标准来采集数据，但是在我们分析数据时，为了保证数据的完整性，应该只取用25Hz。</p>
+<p>同时，动作识别需要根据一系列的数据来进行分析，单点的数据不能得到任何信息，因此，需要考虑的就是应该截取多大的时间段来做动作识别的分析。傅里叶变换要求要完整地分析一段离散的数据，那么这段数据中最大的周期应该包含在里面。多种动作中以步行的周期最大，此处暂定2s的时间段来进行分析。如果2s的时间段中覆盖了完整的行为周期，那么绘制出的傅里叶变换图像也应该是对称的。</p>
+<h3 id="傅里叶变换，特征抽取"><a href="#傅里叶变换，特征抽取" class="headerlink" title="傅里叶变换，特征抽取"></a>傅里叶变换，特征抽取</h3><blockquote>
+<p>本文的目的并不是要讲述动作识别的实现过程，而是要说明在特征抽取的过程中，最为重要的特征的理论说明和实现。</p>
+</blockquote>
+<p>手机中采集的加速度计的数据是时域的信号，但是当我们需要对信号进行分析时，需要将时域的信号转换到频域中，并从中抽取出特征进行分析。<br>由于我们所采集的数据是离散的周期性数据，所以就对应离散傅里叶变换。随机抽取两条驾车和两条步行的数据，绘制图像：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line"></span><br><span class="line">PERIOD = <span class="number">2</span> <span class="comment">#s,时间间隔</span></span><br><span class="line">FREQ = <span class="number">50</span> <span class="comment">#Hz，样本频率</span></span><br><span class="line"></span><br><span class="line">cs = [<span class="string">&#x27;red&#x27;</span>, <span class="string">&#x27;blue&#x27;</span>]</span><br><span class="line">lab = [<span class="string">&#x27;car&#x27;</span>, <span class="string">&#x27;walk&#x27;</span>]</span><br><span class="line">count = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">plt.figure(figsize = (<span class="number">10</span>,<span class="number">8</span>))</span><br><span class="line">p1 = plt.subplot(<span class="number">211</span>)</span><br><span class="line">p2 = plt.subplot(<span class="number">212</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> line <span class="keyword">in</span> sys.stdin:</span><br><span class="line">    info = line.strip().split(<span class="string">&#x27;\t&#x27;</span>)</span><br><span class="line">    state = info[<span class="number">0</span>]</span><br><span class="line">    x = <span class="built_in">map</span>(<span class="built_in">float</span>, info[<span class="number">1</span>].split(<span class="string">&#x27;,&#x27;</span>))</span><br><span class="line">    <span class="keyword">if</span> state == <span class="string">&#x27;bus&#x27;</span>:</span><br><span class="line">        p1.scatter(np.linspace(<span class="number">0</span>, FREQ, <span class="built_in">len</span>(x)), np.absolute(np.fft.fft(x)), c= cs[count%<span class="number">2</span>], \</span><br><span class="line">                label = state + <span class="built_in">str</span>(count%<span class="number">2</span>), s = <span class="number">30</span>, alpha = (count + <span class="number">1</span>) * <span class="number">0.2</span>)</span><br><span class="line">    <span class="keyword">elif</span> state == <span class="string">&#x27;walk&#x27;</span>:</span><br><span class="line">        p2.scatter(np.linspace(<span class="number">0</span>, FREQ, <span class="built_in">len</span>(x)), np.absolute(np.fft.fft(x)), c= cs[count%<span class="number">2</span>], \</span><br><span class="line">                label = state + <span class="built_in">str</span>(count%<span class="number">2</span>), s = <span class="number">30</span>, alpha = (count + <span class="number">1</span>) * <span class="number">0.2</span>)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">continue</span></span><br><span class="line">    count = count + <span class="number">1</span></span><br><span class="line"></span><br><span class="line">p1.legend()</span><br><span class="line">p1.axis([-<span class="number">10.0</span>,<span class="number">60.0</span>, -<span class="number">10.0</span>,<span class="number">50.0</span>])</span><br><span class="line">p1.set_xlabel(<span class="string">&#x27;Freq(Hz)&#x27;</span>)</span><br><span class="line">p1.set_ylabel(<span class="string">&#x27;fft&#x27;</span>)</span><br><span class="line"></span><br><span class="line">p2.legend()</span><br><span class="line">p2.axis([-<span class="number">10.0</span>,<span class="number">60.0</span>, -<span class="number">10.0</span>,<span class="number">50.0</span>])</span><br><span class="line">p2.set_xlabel(<span class="string">&#x27;Freq(Hz)&#x27;</span>)</span><br><span class="line">p2.set_ylabel(<span class="string">&#x27;fft&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">#plt.show()</span></span><br><span class="line">plt.savefig(<span class="string">&#x27;./all.png&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<p>得到这四条记录的图像：</p>
+<p>&emsp; <img src="/images/walk&&car_all.png" alt="步行驾车四条记录"></p>
+<p>从图像就可以看出，同是步行的数据基本都重叠在一起，同是驾车的数据也基本都重叠在一起，也就是说我们通过分析傅里叶变换之后不同频率的数据的值来作为特征判断用户的动作。</p>
+<p>为了直观感受驾车和步行在频域的区别，分别抽取一条步行和一条驾车的数据，绘制图像：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line"></span><br><span class="line">PERIOD = <span class="number">2</span></span><br><span class="line">FREQ = <span class="number">50</span></span><br><span class="line"></span><br><span class="line">cs = [<span class="string">&#x27;red&#x27;</span>, <span class="string">&#x27;blue&#x27;</span>]</span><br><span class="line">lab = [<span class="string">&#x27;car&#x27;</span>, <span class="string">&#x27;walk&#x27;</span>]</span><br><span class="line">count = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">plt.figure(figsize = (<span class="number">10</span>,<span class="number">5</span>))</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> line <span class="keyword">in</span> sys.stdin:</span><br><span class="line">    info = line.strip().split(<span class="string">&#x27;\t&#x27;</span>)</span><br><span class="line">    state = info[<span class="number">0</span>]</span><br><span class="line">    x = <span class="built_in">map</span>(<span class="built_in">float</span>, info[<span class="number">1</span>].split(<span class="string">&#x27;,&#x27;</span>))</span><br><span class="line">    plt.scatter(np.linspace(<span class="number">0</span>, FREQ, <span class="built_in">len</span>(x)), np.absolute(np.fft.fft(x)), c = cs[count], label = state, s = <span class="number">30</span>, alpha = (count + <span class="number">1</span>) * <span class="number">0.3</span>)</span><br><span class="line">    count  = count + <span class="number">1</span></span><br><span class="line"></span><br><span class="line">plt.legend()</span><br><span class="line">plt.xlim(-<span class="number">10</span>, <span class="number">60</span>)</span><br><span class="line">plt.ylim(-<span class="number">10</span>, <span class="number">50</span>)</span><br><span class="line">plt.xlabel(<span class="string">&#x27;Freq(Hz)&#x27;</span>)</span><br><span class="line">plt.ylabel(<span class="string">&#x27;fft&#x27;</span>)</span><br><span class="line"><span class="comment">#plt.show()</span></span><br><span class="line">plt.savefig(<span class="string">&#x27;./car_walk.png&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<p>得到两条记录的图像：</p>
+<p>&emsp; <img src="/images/walk&&car_compare.png" alt="步行驾车两条记录"></p>
+<p>从步行和驾车的图像对比来看，在低频阶段我们可以看到步行的值比驾车要高，但是在高频阶段，驾车的值要比步行的值要高，所以在采取特征进行训练时，我们考虑以下特征：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">x_spec = np.fft.fft(xlist)</span><br><span class="line">y_spec = np.fft.fft(ylist)</span><br><span class="line">z_spec = np.fft.fft(zlist)</span><br><span class="line">m_spec = np.fft.fft(magni)</span><br><span class="line"></span><br><span class="line">x_f1 = np.<span class="built_in">sum</span>(np.absolute(x_spec[:Period]))</span><br><span class="line">y_f1 = np.<span class="built_in">sum</span>(np.absolute(y_spec[:Period]))</span><br><span class="line">z_f1 = np.<span class="built_in">sum</span>(np.absolute(z_spec[:Period]))</span><br><span class="line">m_f1 = np.<span class="built_in">sum</span>(np.absolute(m_spec[:Period]))</span><br><span class="line"></span><br><span class="line">x_f2_3 = np.<span class="built_in">sum</span>(np.absolute(x_spec[<span class="number">2</span>*Period:<span class="number">3</span>*Period]))</span><br><span class="line">y_f2_3 = np.<span class="built_in">sum</span>(np.absolute(y_spec[<span class="number">2</span>*Period:<span class="number">3</span>*Period]))</span><br><span class="line">z_f2_3 = np.<span class="built_in">sum</span>(np.absolute(z_spec[<span class="number">2</span>*Period:<span class="number">3</span>*Period]))</span><br><span class="line">m_f2_3 = np.<span class="built_in">sum</span>(np.absolute(m_spec[<span class="number">2</span>*Period:<span class="number">3</span>*Period]))</span><br><span class="line"></span><br><span class="line">x_f1_3 = np.<span class="built_in">sum</span>(np.absolute(x_spec[<span class="number">1</span>*Period:<span class="number">3</span>*Period]))</span><br><span class="line">y_f1_3 = np.<span class="built_in">sum</span>(np.absolute(y_spec[<span class="number">1</span>*Period:<span class="number">3</span>*Period]))</span><br><span class="line">z_f1_3 = np.<span class="built_in">sum</span>(np.absolute(z_spec[<span class="number">1</span>*Period:<span class="number">3</span>*Period]))</span><br><span class="line">m_f1_3 = np.<span class="built_in">sum</span>(np.absolute(m_spec[<span class="number">1</span>*Period:<span class="number">3</span>*Period]))</span><br><span class="line"></span><br><span class="line">x_f4_5 = np.<span class="built_in">sum</span>(np.absolute(x_spec[<span class="number">4</span>*Period:<span class="number">5</span>*Period]))</span><br><span class="line">y_f4_5 = np.<span class="built_in">sum</span>(np.absolute(y_spec[<span class="number">4</span>*Period:<span class="number">5</span>*Period]))</span><br><span class="line">z_f4_5 = np.<span class="built_in">sum</span>(np.absolute(z_spec[<span class="number">4</span>*Period:<span class="number">5</span>*Period]))</span><br><span class="line">m_f4_5 = np.<span class="built_in">sum</span>(np.absolute(m_spec[<span class="number">4</span>*Period:<span class="number">5</span>*Period]))</span><br><span class="line"></span><br><span class="line">x_f6_16 = np.<span class="built_in">sum</span>(np.absolute(x_spec[<span class="number">6</span>*Period:<span class="number">16</span>*Period]))</span><br><span class="line">y_f6_16 = np.<span class="built_in">sum</span>(np.absolute(y_spec[<span class="number">6</span>*Period:<span class="number">16</span>*Period]))</span><br><span class="line">z_f6_16 = np.<span class="built_in">sum</span>(np.absolute(z_spec[<span class="number">6</span>*Period:<span class="number">16</span>*Period]))</span><br><span class="line">m_f6_16 = np.<span class="built_in">sum</span>(np.absolute(m_spec[<span class="number">6</span>*Period:<span class="number">16</span>*Period]))</span><br><span class="line"></span><br><span class="line">x_f4_16 = np.<span class="built_in">sum</span>(np.absolute(x_spec[<span class="number">4</span>*Period:<span class="number">16</span>*Period]))</span><br><span class="line">y_f4_16 = np.<span class="built_in">sum</span>(np.absolute(y_spec[<span class="number">4</span>*Period:<span class="number">16</span>*Period]))</span><br><span class="line">z_f4_16 = np.<span class="built_in">sum</span>(np.absolute(z_spec[<span class="number">4</span>*Period:<span class="number">16</span>*Period]))</span><br><span class="line">m_f4_16 = np.<span class="built_in">sum</span>(np.absolute(z_spec[<span class="number">4</span>*Period:<span class="number">16</span>*Period]))</span><br></pre></td></tr></table></figure>
+<h3 id="傅里叶分析"><a href="#傅里叶分析" class="headerlink" title="傅里叶分析"></a>傅里叶分析</h3><p>之前没有学习过傅里叶分析，因为这次项目需要，所以就或多或少地了解了一些用来应对项目。</p>
+<p><strong>你眼中看似落叶纷飞变化无常的世界，实际只是躺在上帝怀中一份早已谱好的乐章。</strong> 看上去这么诗意的一句话其实是教材上对傅里叶分析的介绍。<br>傅里叶分析分为傅里叶级数（Fourier Serie）和傅里叶变换（Fourier Transformation）。法国数学家傅里叶发现，任何周期函数都可以用正弦函数和余弦函数构成的无穷级数来表示（选择正弦函数和余弦函数作为基函数是因为他们是正交的），暂时不考虑证明！</p>
+<h4 id="傅里叶级数"><a href="#傅里叶级数" class="headerlink" title="傅里叶级数"></a>傅里叶级数</h4><p>&emsp; <img src="/images/time_area.png" alt="time_area"></p>
+<p>上图是sin(x) + sin(3<em>x) + sin(5</em>x) + sin(7*x)的图像以及它们分开的各自的图像。当这几个函数分开时，我们还是可以进行分辨的，但是一旦将它们组合在一起，我们无法分辨这个函数，也使得我们无法对其进行处理和提取信息。</p>
+<p>&emsp; <img src="/images/freq_area.png" alt="freq_area"></p>
+<p>对应上一幅图中在时域的图像，这幅图显示了之前的函数在频域的图像，我们可以看出之前复杂的函数被分拆成多个函数的组合，以上是傅里叶级数的应用，实际可以用来进行信号的过滤，声音的提取等。</p>
+<p><strong>来一张傅里叶级数的全家福~</strong><br>&emsp; <img src="/images/dft.jpg" alt="dft"></p>
+<blockquote>
+<p>傅里叶分析究竟是干什么用的？这段相对比较枯燥，已经知道了的同学可以直接跳到下一个分割线。</p>
+</blockquote>
+<blockquote>
+<p>先说一个最直接的用途。无论听广播还是看电视，我们一定对一个词不陌生——频道。频道频道，就是频率的通道，不同的频道就是将不同的频率作为一个通道来进行信息传输。下面大家尝试一件事：<br>先在纸上画一个sin（x），不一定标准，意思差不多就行。不是很难吧。</p>
+</blockquote>
+<blockquote>
+<p>好，接下去画一个sin（3x）+sin（5x）的图形。别说标准不标准了，曲线什么时候上升什么时候下降你都不一定画的对吧？</p>
+</blockquote>
+<blockquote>
+<p>好，画不出来不要紧，我把sin（3x）+sin（5x）的曲线给你，但是前提是你不知道这个曲线的方程式，现在需要你把sin（5x）给我从图里拿出去，看看剩下的是什么。这基本是不可能做到的。<br>但是在频域呢？则简单的很，无非就是几条竖线而已。</p>
+</blockquote>
+<blockquote>
+<p>所以很多在时域看似不可能做到的数学操作，在频域相反很容易。这就是需要傅里叶变换的地方。尤其是从某条曲线中去除一些特定的频率成分，这在工程上称为滤波，是信号处理最重要的概念之一，只有在频域才能轻松的做到。</p>
+</blockquote>
+<blockquote>
+<p>再说一个更重要，但是稍微复杂一点的用途——求解微分方程。（这段有点难度，看不懂的可以直接跳过这段）微分方程的重要性不用我过多介绍了。各行各业都用的到。但是求解微分方程却是一件相当麻烦的事情。因为除了要计算加减乘除，还要计算微分积分。而傅里叶变换则可以让微分和积分在频域中变为乘法和除法，大学数学瞬间变小学算术有没有。</p>
+</blockquote>
+<h4 id="傅里叶变换"><a href="#傅里叶变换" class="headerlink" title="傅里叶变换"></a>傅里叶变换</h4><p>傅里叶级数的本质是将一个周期的信号分解成无限多分开的（离散的）正弦波。<br>但是，我们在实际的应用中，遇到更多的是非周期的数据，而且我们也意识到无法将连续的非周期信号变换为周期的离散信号。<br>在傅里叶变换中，如果在时域的信号是周期离散的数据，那么对应在频域的信号就是非周期的离散的数据。<br>如果在时域的信号是周期连续的数据，那么对应在频域的信号就是非周期的连续的数据，对于单一的正余弦函数，是一条单一的直线。</p>
+<p>参考资料：</p>
+<ol>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/19763358?refer=wille">来自知乎的不理解，毋宁死的解说</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2016/11/25/markdown%E8%AF%AD%E6%B3%95%E8%AE%B0%E5%BD%95/" rel="prev" title="Markdown语法记录">
+      <i class="fa fa-chevron-left"></i> Markdown语法记录
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2016/12/06/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E6%A6%82%E8%BF%B0/" rel="next" title="机器学习概述">
+      机器学习概述 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E4%B8%8E%E6%B8%85%E6%B4%97"><span class="nav-number">1.</span> <span class="nav-text">数据收集与清洗</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%82%85%E9%87%8C%E5%8F%B6%E5%8F%98%E6%8D%A2%EF%BC%8C%E7%89%B9%E5%BE%81%E6%8A%BD%E5%8F%96"><span class="nav-number">2.</span> <span class="nav-text">傅里叶变换，特征抽取</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%82%85%E9%87%8C%E5%8F%B6%E5%88%86%E6%9E%90"><span class="nav-number">3.</span> <span class="nav-text">傅里叶分析</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%82%85%E9%87%8C%E5%8F%B6%E7%BA%A7%E6%95%B0"><span class="nav-number">3.1.</span> <span class="nav-text">傅里叶级数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%82%85%E9%87%8C%E5%8F%B6%E5%8F%98%E6%8D%A2"><span class="nav-number">3.2.</span> <span class="nav-text">傅里叶变换</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Vio</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">24</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Vio</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"savioyo.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="为什么需要大数据大数据是收集、整理和处理大容量数据集，并从中获得统计数据和战略分析，其处理数据所需的计算能力或者存储容量早已超过一台计算机的上限，因此需要集群的计算力和存储力。大数据框架就是解决了大数据的可靠存储和处理，主要是高并发、高可用以及容错等机制。当前的大数据框架有很多：  仅批处理框架：Apache Hadoop 仅流处理框架：Apache Storm、Apache Samza 混合框架">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Hadoop与Spark比较">
+<meta property="og:url" content="http://savioyo.com/2017/12/10/Hadoop%E4%B8%8ESpark%E6%AF%94%E8%BE%83/">
+<meta property="og:site_name" content="鲈鱼和葡萄">
+<meta property="og:description" content="为什么需要大数据大数据是收集、整理和处理大容量数据集，并从中获得统计数据和战略分析，其处理数据所需的计算能力或者存储容量早已超过一台计算机的上限，因此需要集群的计算力和存储力。大数据框架就是解决了大数据的可靠存储和处理，主要是高并发、高可用以及容错等机制。当前的大数据框架有很多：  仅批处理框架：Apache Hadoop 仅流处理框架：Apache Storm、Apache Samza 混合框架">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2017-12-10T12:31:00.000Z">
+<meta property="article:modified_time" content="2018-03-11T10:29:40.000Z">
+<meta property="article:author" content="Vio">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://savioyo.com/2017/12/10/Hadoop%E4%B8%8ESpark%E6%AF%94%E8%BE%83/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Hadoop与Spark比较 | 鲈鱼和葡萄</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">鲈鱼和葡萄</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://savioyo.com/2017/12/10/Hadoop%E4%B8%8ESpark%E6%AF%94%E8%BE%83/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Vio">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="鲈鱼和葡萄">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Hadoop与Spark比较
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2017-12-10 20:31:00" itemprop="dateCreated datePublished" datetime="2017-12-10T20:31:00+08:00">2017-12-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2018-03-11 18:29:40" itemprop="dateModified" datetime="2018-03-11T18:29:40+08:00">2018-03-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Data/" itemprop="url" rel="index"><span itemprop="name">Data</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="为什么需要大数据"><a href="#为什么需要大数据" class="headerlink" title="为什么需要大数据"></a>为什么需要大数据</h3><p>大数据是收集、整理和处理大容量数据集，并从中获得统计数据和战略分析，其处理数据所需的计算能力或者存储容量早已超过一台计算机的上限，因此需要集群的计算力和存储力。大数据框架就是解决了大数据的可靠存储和处理，主要是高并发、高可用以及容错等机制。当前的大数据框架有很多：</p>
+<ul>
+<li>仅批处理框架：Apache Hadoop</li>
+<li>仅流处理框架：Apache Storm、Apache Samza</li>
+<li>混合框架：Apache Spark、Apache Flink</li>
+</ul>
+<a id="more"></a>
+
+<p>处理框架和处理引擎负责对数据系统中的数据进行计算。虽然“引擎”和“框架”之间没有什么权威的定义，但大部分时候可以将前者定义为实际负责处理数据操作的组件，后者则可定义为承担类似作用的一系列组件。</p>
+<p>例如Apache Hadoop可以看作一种以MapReduce作为默认处理引擎的处理框架。引擎和框架通常可以相互替换或同时使用。例如另一个框架Apache Spark可以纳入Hadoop并取代MapReduce。组件之间的这种互操作性是大数据系统灵活性如此之高的原因之一。</p>
+<h3 id="批处理系统与混合处理系统"><a href="#批处理系统与混合处理系统" class="headerlink" title="批处理系统与混合处理系统"></a>批处理系统与混合处理系统</h3><h4 id="批处理系统"><a href="#批处理系统" class="headerlink" title="批处理系统"></a>批处理系统</h4><p>批处理在大数据世界有着悠久的历史。批处理主要操作大容量静态数据集，并在计算过程完成后返回结果。</p>
+<p>批处理模式中使用的数据集通常符合下列特征:</p>
+<ul>
+<li><p>有界：批处理数据集代表数据的有限集合</p>
+</li>
+<li><p>持久：数据通常始终存储在某种类型的持久存储位置中</p>
+</li>
+<li><p>大量：批处理操作通常是处理极为海量数据集的唯一方法</p>
+</li>
+</ul>
+<p>批处理非常适合需要访问全套记录才能完成的计算工作。例如在计算总数和平均数时，必须将数据集作为一个整体加以处理，而不能将其视作多条记录的集合。这些操作要求在计算进行过程中数据维持自己的状态。</p>
+<p>需要处理大量数据的任务通常最适合用批处理操作进行处理。无论直接从持久存储设备处理数据集，或首先将数据集载入内存，批处理系统在设计过程中就充分考虑了数据的量，可提供充足的处理资源。由于批处理在应对大量持久数据方面的表现极为出色，因此经常被用于对历史数据进行分析。</p>
+<p>大量数据的处理需要付出大量时间，因此批处理不适合对处理时间要求较高的场合。</p>
+<h4 id="Hadoop"><a href="#Hadoop" class="headerlink" title="Hadoop"></a>Hadoop</h4><p>Apache Hadoop是一种专用于批处理的处理框架。Hadoop是首个在开源社区获得极大关注的大数据框架。基于谷歌有关海量数据处理所发表的多篇论文与经验的Hadoop重新实现了相关算法和组件堆栈，让大规模批处理技术变得更易用。</p>
+<p>新版Hadoop包含多个组件，即多个层，通过配合使用可处理批数据：</p>
+<ul>
+<li><p>HDFS：HDFS是一种分布式文件系统层，可对集群节点间的存储和复制进行协调。HDFS确保了无法避免的节点故障发生后数据依然可用，可将其用作数据来源，可用于存储中间态的处理结果，并可存储计算的最终结果。</p>
+</li>
+<li><p>YARN：YARN是Yet Another Resource Negotiator（另一个资源管理器）的缩写，可充当Hadoop堆栈的集群协调组件。该组件负责协调并管理底层资源和调度作业的运行。通过充当集群资源的接口，YARN使得用户能在Hadoop集群中使用比以往的迭代方式运行更多类型的工作负载。</p>
+</li>
+<li><p>MapReduce：MapReduce是Hadoop的原生批处理引擎。</p>
+</li>
+</ul>
+<p><strong>批处理模式</strong></p>
+<p>Hadoop的处理功能来自MapReduce引擎。MapReduce的处理技术符合使用键值对的map、shuffle、reduce算法要求。基本处理过程包括：</p>
+<ul>
+<li><p>从HDFS文件系统读取数据集</p>
+</li>
+<li><p>将数据集拆分成小块并分配给所有可用节点</p>
+</li>
+<li><p>针对每个节点上的数据子集进行计算（计算的中间态结果会重新写入HDFS）</p>
+</li>
+<li><p>重新分配中间态结果并按照键进行分组</p>
+</li>
+<li><p>通过对每个节点计算的结果进行汇总和组合对每个键的值进行“Reducing”</p>
+</li>
+<li><p>将计算而来的最终结果重新写入 HDFS</p>
+</li>
+</ul>
+<p><strong>优势和局限</strong></p>
+<p>由于这种方法严重依赖持久存储，每个任务需要多次执行读取和写入操作，因此速度相对较慢。但另一方面由于磁盘空间通常是服务器上最丰富的资源，这意味着MapReduce可以处理非常海量的数据集。同时也意味着相比其他类似技术，Hadoop的MapReduce通常可以在廉价硬件上运行，因为该技术并不需要将一切都存储在内存中。MapReduce具备极高的缩放潜力，生产环境中曾经出现过包含数万个节点的应用。</p>
+<p>MapReduce的学习曲线较为陡峭，虽然Hadoop生态系统的其他周边技术可以大幅降低这一问题的影响，但通过Hadoop集群快速实现某些应用时依然需要注意这个问题。</p>
+<p>围绕Hadoop已经形成了辽阔的生态系统，Hadoop集群本身也经常被用作其他软件的组成部件。很多其他处理框架和引擎通过与Hadoop集成也可以使用HDFS和YARN资源管理器。</p>
+<p><strong>总结</strong></p>
+<p>Apache Hadoop及其MapReduce处理引擎提供了一套久经考验的批处理模型，最适合处理对时间要求不高的非常大规模数据集。通过非常低成本的组件即可搭建完整功能的Hadoop集群，使得这一廉价且高效的处理技术可以灵活应用在很多案例中。与其他框架和引擎的兼容与集成能力使得Hadoop可以成为使用不同技术的多种工作负载处理平台的底层基础。</p>
+<h4 id="混合处理系统"><a href="#混合处理系统" class="headerlink" title="混合处理系统"></a>混合处理系统</h4><p>一些处理框架可同时处理批处理和流处理工作负载。这些框架可以用相同或相关的组件和API处理两种类型的数据，借此让不同的处理需求得以简化。</p>
+<p>如你所见，这一特性主要是由Spark和Flink实现的，下文将介绍这两种框架。实现这样的功能重点在于两种不同处理模式如何进行统一，以及要对固定和不固定数据集之间的关系进行何种假设。</p>
+<p>虽然侧重于某一种处理类型的项目会更好地满足具体用例的要求，但混合框架意在提供一种数据处理的通用解决方案。这种框架不仅可以提供处理数据所需的方法，而且提供了自己的集成项、库、工具，可胜任图形分析、机器学习、交互式查询等多种任务。</p>
+<h4 id="Spark"><a href="#Spark" class="headerlink" title="Spark"></a>Spark</h4><p>Apache Spark是一种包含流处理能力的下一代批处理框架。与Hadoop的MapReduce引擎基于各种相同原则开发而来的Spark主要侧重于通过完善的内存计算和处理优化机制加快批处理工作负载的运行速度。</p>
+<p>Spark可作为独立集群部署（需要相应存储层的配合），或可与Hadoop集成并取代MapReduce引擎。</p>
+<p><strong>批处理模式</strong></p>
+<p>与MapReduce不同，Spark的数据处理工作全部在内存中进行，只在一开始将数据读入内存，以及将最终结果持久存储时需要与存储层交互。所有中间态的处理结果均存储在内存中。</p>
+<p>虽然内存中处理方式可大幅改善性能，Spark在处理与磁盘有关的任务时速度也有很大提升，因为通过提前对整个任务集进行分析可以实现更完善的整体式优化。为此Spark可创建代表所需执行的全部操作，需要操作的数据，以及操作和数据之间关系的Directed Acyclic Graph（有向无环图），即DAG，借此处理器可以对任务进行更智能的协调。</p>
+<p>为了实现内存中批计算，Spark会使用一种名为Resilient Distributed Dataset（弹性分布式数据集），即RDD的模型来处理数据。这是一种代表数据集，只位于内存中，永恒不变的结构。针对RDD执行的操作可生成新的RDD。每个RDD可通过世系（Lineage）回溯至父级RDD，并最终回溯至磁盘上的数据。Spark可通过RDD在无需将每个操作的结果写回磁盘的前提下实现容错。</p>
+<p><strong>流处理模式</strong></p>
+<p>流处理能力是由Spark Streaming实现的。Spark本身在设计上主要面向批处理工作负载，为了弥补引擎设计和流处理工作负载特征方面的差异，Spark实现了一种叫做微批（Micro-batch）*的概念。在具体策略方面该技术可以将数据流视作一系列非常小的“批”，借此即可通过批处理引擎的原生语义进行处理。</p>
+<p>Spark Streaming会以亚秒级增量对流进行缓冲，随后这些缓冲会作为小规模的固定数据集进行批处理。这种方式的实际效果非常好，但相比真正的流处理框架在性能方面依然存在不足。</p>
+<p><strong>优势和局限</strong></p>
+<p>使用Spark而非Hadoop MapReduce的主要原因是速度。在内存计算策略和先进的DAG调度等机制的帮助下，Spark可以用更快速度处理相同的数据集。</p>
+<p>Spark的另一个重要优势在于多样性。该产品可作为独立集群部署，或与现有Hadoop集群集成。该产品可运行批处理和流处理，运行一个集群即可处理不同类型的任务。</p>
+<p>除了引擎自身的能力外，围绕Spark还建立了包含各种库的生态系统，可为机器学习、交互式查询等任务提供更好的支持。相比MapReduce，Spark任务更是“众所周知”地易于编写，因此可大幅提高生产力。</p>
+<p>为流处理系统采用批处理的方法，需要对进入系统的数据进行缓冲。缓冲机制使得该技术可以处理非常大量的传入数据，提高整体吞吐率，但等待缓冲区清空也会导致延迟增高。这意味着Spark Streaming可能不适合处理对延迟有较高要求的工作负载。</p>
+<p>由于内存通常比磁盘空间更贵，因此相比基于磁盘的系统，Spark成本更高。然而处理速度的提升意味着可以更快速完成任务，在需要按照小时数为资源付费的环境中，这一特性通常可以抵消增加的成本。</p>
+<p>Spark内存计算这一设计的另一个后果是，如果部署在共享的集群中可能会遇到资源不足的问题。相比Hadoop MapReduce，Spark的资源消耗更大，可能会对需要在同一时间使用集群的其他任务产生影响。从本质来看，Spark更不适合与Hadoop堆栈的其他组件共存一处。</p>
+<p><strong>总结</strong></p>
+<p>Spark是多样化工作负载处理任务的最佳选择。Spark批处理能力以更高内存占用为代价提供了无与伦比的速度优势。对于重视吞吐率而非延迟的工作负载，则比较适合使用Spark Streaming作为流处理解决方案。</p>
+<h3 id="Hadoop和Spark"><a href="#Hadoop和Spark" class="headerlink" title="Hadoop和Spark"></a>Hadoop和Spark</h3><p>如果说，MapReduce是公认的分布式数据处理的低层次抽象，类似逻辑门电路中的与门，或门和非门，那么Spark的RDD就是分布式大数据处理的高层次抽象，类似逻辑电路中的编码器或译码器等。</p>
+<p>RDD就是一个分布式的数据集合（Collection），对这个集合的任何操作都可以像函数式编程中操作内存中的集合一样直观、简便，但集合操作的实现确是在后台分解成一系列Task发送到几十台上百台服务器组成的集群上完成的。最近新推出的大数据处理框架Apache Flink也使用数据集（Data Set）和其上的操作作为编程模型的。</p>
+<p>由RDD组成的有向无环图（DAG）的执行是调度程序将其生成物理计划并进行优化，然后在Spark集群上执行的。Spark还提供了一个类似于MapReduce的执行引擎，该引擎更多地使用内存，而不是磁盘，得到了更好的执行性能。</p>
+<p>那么Spark解决了Hadoop的哪些问题呢？</p>
+<p><strong>Hadoop</strong></p>
+<ul>
+<li>抽象层次低，需要手工编写代码来完成，使用上难以上手</li>
+<li>只提供了两个操作Map和Reduce，表达力欠缺</li>
+<li>一个Job只有Map和Reduce两个阶段（Phase），复杂的计算需要大量的Job完成，Job之间的依赖关系是由开发者自己管理的</li>
+<li>处理逻辑隐藏在代码细节中，没有整体逻辑</li>
+<li>中间结果也放在HDFS文件系统中</li>
+<li>ReduceTask需要等待所有MapTask都完成后才可以开始</li>
+<li>时延高，只适用Batch数据处理，对于交互式数据处理，实时数据处理的支持不够</li>
+<li>对于迭代式数据处理性能比较差</li>
+</ul>
+<p><strong>Spark</strong></p>
+<ul>
+<li>基于RDD的抽象，数据处理逻辑的代码非常简短</li>
+<li>提供很多转换和动作，很多基本操作如Join、GroupBy已经在RDD转换和动作中完成</li>
+<li>一个Job可以包含RDD的多个转换操作，在调度时可以生成多个阶段（Stage），而且如果多个map操作的RDD的分区不变，是可以放在同一个Task中进行</li>
+<li>在Scala中，通过匿名函数和高阶函数，RDD的转换支持流式API，可以提供处理逻辑的整体视图。代码不包含具体操作的实现细节，逻辑更清晰</li>
+<li>中间结果放在内存中，内存放不下了会写入本地磁盘，而不是HDFS</li>
+<li>分区相同的转换构成流水线放在一个Task中运行，分区不同的转换需要Shuffle，被划分到不同的Stage中，需要等待前面的Stage完成后才可以开始</li>
+<li>通过将流拆成小的batch提供Discretized Stream处理流数据</li>
+<li>通过在内存中缓存数据，提高迭代式计算的性能</li>
+</ul>
+<p>就目前的趋势而言，Spark应该有希望取代Hadoop中的MapReduce处理引擎。<br>参考资料：</p>
+<ol>
+<li><a target="_blank" rel="noopener" href="http://36kr.com/p/5061463.html">Hadoop、Spark等5种大数据框架对比</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhihu.com/question/26568496">与 Hadoop 对比，如何看待 Spark 技术</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2017/12/09/%E5%8D%81%E8%BF%9B%E5%88%B6%E8%BD%AC%E4%BA%8C%E8%BF%9B%E5%88%B6/" rel="prev" title="十进制转二进制">
+      <i class="fa fa-chevron-left"></i> 十进制转二进制
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2017/12/17/Spark%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6/" rel="next" title="Spark任务调度">
+      Spark任务调度 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E5%A4%A7%E6%95%B0%E6%8D%AE"><span class="nav-number">1.</span> <span class="nav-text">为什么需要大数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%B9%E5%A4%84%E7%90%86%E7%B3%BB%E7%BB%9F%E4%B8%8E%E6%B7%B7%E5%90%88%E5%A4%84%E7%90%86%E7%B3%BB%E7%BB%9F"><span class="nav-number">2.</span> <span class="nav-text">批处理系统与混合处理系统</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%89%B9%E5%A4%84%E7%90%86%E7%B3%BB%E7%BB%9F"><span class="nav-number">2.1.</span> <span class="nav-text">批处理系统</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Hadoop"><span class="nav-number">2.2.</span> <span class="nav-text">Hadoop</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B7%B7%E5%90%88%E5%A4%84%E7%90%86%E7%B3%BB%E7%BB%9F"><span class="nav-number">2.3.</span> <span class="nav-text">混合处理系统</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Spark"><span class="nav-number">2.4.</span> <span class="nav-text">Spark</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hadoop%E5%92%8CSpark"><span class="nav-number">3.</span> <span class="nav-text">Hadoop和Spark</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Vio</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">24</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Vio</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
